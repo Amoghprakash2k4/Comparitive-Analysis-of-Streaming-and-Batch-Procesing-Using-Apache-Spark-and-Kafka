@@ -6,6 +6,7 @@ import json
 import mysql.connector
 import time
 import psutil
+from performance_logger import process_streaming_batch
 
 # Define schema
 schema = StructType() \
@@ -50,7 +51,7 @@ mysql_config = {
 process = psutil.Process()
 
 def process_batch(batch_df, batch_id):
-    print(f"\n\U0001f4e6 Starting processing for Batch ID: {batch_id}")
+    print(f"\n📦 Starting processing for Batch ID: {batch_id}")
     start_time = time.time()
 
     # CPU & memory BEFORE processing
@@ -64,15 +65,21 @@ def process_batch(batch_df, batch_id):
         return
 
     emoji_counts = batch_df.groupBy("emoji_type").count()
-
     total_emoji_count = emoji_counts.agg({"count": "sum"}).collect()[0][0]
+
     normalized_emoji_counts = emoji_counts.withColumn(
         "normalized_count", col("count") / lit(total_emoji_count)
     )
 
     emoji_results = normalized_emoji_counts.collect()
 
-    # Send most used emoji to Kafka
+    # 🧠 Extract top 10 emojis for logging
+    top_emojis = [
+        {"emoji": row["emoji_type"], "count": row["count"]}
+        for row in sorted(emoji_results, key=lambda r: r["count"], reverse=True)[:10]
+    ]
+
+    # 🔝 Send most used emoji to Kafka
     filtered_emojis = [row for row in emoji_results if row['normalized_count'] >= 0.26]
 
     if len(filtered_emojis) == 0:
@@ -84,7 +91,7 @@ def process_batch(batch_df, batch_id):
         print(f"Most used emoji: {emoji_to_send} (Count: {most_used_emoji['count']}, Normalized: {most_used_emoji['normalized_count']:.2f})\n")
         producer.send('highestemoji', {'emoji_type': emoji_to_send})
 
-    # Insert aggregated data into MySQL
+    # ✅ Insert aggregated data into MySQL
     try:
         connection = mysql.connector.connect(**mysql_config)
         cursor = connection.cursor()
@@ -102,17 +109,17 @@ def process_batch(batch_df, batch_id):
                     float(row['normalized_count'])
                 ))
             except mysql.connector.IntegrityError as dup_err:
-                print(f"\u274c Duplicate entry error: {dup_err}")
+                print(f"❌ Duplicate entry error: {dup_err}")
 
         connection.commit()
         cursor.close()
         connection.close()
-        print("\u2705 Aggregated data inserted into MySQL for batch", batch_id)
+        print("✅ Aggregated data inserted into MySQL for batch", batch_id)
 
     except mysql.connector.Error as err:
-        print("\u274c MySQL error:", err)
+        print("❌ MySQL error:", err)
 
-    # Store raw data for batch mode
+    # ✅ Insert raw batch data
     try:
         raw_connection = mysql.connector.connect(**mysql_config)
         raw_cursor = raw_connection.cursor()
@@ -131,10 +138,10 @@ def process_batch(batch_df, batch_id):
         raw_connection.commit()
         raw_cursor.close()
         raw_connection.close()
-        print("\u2705 Raw data inserted into raw_emojis table")
+        print("✅ Raw data inserted into raw_emojis table")
 
     except mysql.connector.Error as raw_err:
-        print("\u274c MySQL error while inserting raw data:", raw_err)
+        print("❌ MySQL error while inserting raw data:", raw_err)
 
     end_time = time.time()
     duration = end_time - start_time
@@ -143,13 +150,17 @@ def process_batch(batch_df, batch_id):
     cpu_after = process.cpu_percent(interval=1)
     mem_after = process.memory_info().rss / 1024**2  # MB
 
-    # Log resource usage
-    print(f"\u23f1 Batch Execution Time: {duration:.2f} seconds")
-    print(f"\u2699\ufe0f CPU Usage: {cpu_after:.2f}%")
-    print(f"\U0001f9e0 Memory Usage: {mem_after:.2f} MB")
+    # ⏱️ Log resource usage
+    print(f"⏱️ Batch Execution Time: {duration:.2f} seconds")
+    print(f"⚙️ CPU Usage: {cpu_after:.2f}%")
+    print(f"🧠 Memory Usage: {mem_after:.2f} MB")
     print("-----------------------------------------------------\n")
 
-# Stream trigger every 2 seconds
+    # ✅ Log performance
+    process_streaming_batch(batch_id, duration, cpu_after, mem_after, top_emojis)
+
+
+# Trigger stream every 2 seconds
 query = parsed_stream.writeStream \
     .outputMode("append") \
     .format("console") \
