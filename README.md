@@ -35,11 +35,11 @@ A real-time and batch emoji analytics system using Apache Kafka, Apache Spark (S
 ### 1. Kafka Setup
 
 ```bash
-# Start Zookeeper
-bin/zookeeper-server-start.sh config/zookeeper.properties
+# Start spark
+/opt/spark/sbin/start-all.sh
 
-# Start Kafka broker
-bin/kafka-server-start.sh config/server.properties
+# Start Kafka 
+sudo systemctl start kafka
 
-# Create Kafka topic
-bin/kafka-topics.sh --create --topic emoji_topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+# Run
+./start.sh
