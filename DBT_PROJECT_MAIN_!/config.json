@@ -1,0 +1,22 @@
+{
+    "mysql": {
+      "host": "localhost",
+      "port": 3306,
+      "user": "amogh",
+      "password": "yourpassword",
+      "database": "emostream"
+    },
+    "kafka": {
+      "bootstrap_servers": "localhost:9092",
+      "topics": {
+        "raw_emojis": "raw_emojis_topic",
+        "top_emojis": "top_emojis_topic"
+      }
+    },
+    "spark": {
+      "mysql_connector_path": "/home/pes2ug22cs062/Downloads/mysql_jdbc/usr/share/java/mysql-connector-java-9.2.0.jar",
+      "app_name_streaming": "EmojiStreamProcessor",
+      "app_name_batch": "BatchEmojiAnalysis"
+    }
+  }
+  

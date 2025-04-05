@@ -1,3 +1,4 @@
+Batch_Type,Timestamp,Execution_Time,CPU_Usage,Memory_Usage
 Streaming,2025-04-05 17:16:24,2.46,0.00,69.02
 Streaming,2025-04-05 17:16:28,2.49,0.00,69.02
 Streaming,2025-04-05 17:16:31,1.92,1.00,69.02
