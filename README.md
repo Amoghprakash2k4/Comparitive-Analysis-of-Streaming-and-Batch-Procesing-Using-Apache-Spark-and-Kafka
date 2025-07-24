@@ -6,9 +6,10 @@ A real-time and batch emoji analytics system using Apache Kafka, Apache Spark (S
 
 ## 📊 Architecture Diagram
 
-This diagram illustrates the flow :
+This diagram illustrates the flow:
 
-![Emoji Stream & Batch Analytics System](Untitled Diagram.drawio (1).png)
+![Emoji Stream & Batch Analytics System](1.png)
+
 
 **Modules**:
 - **Kafka Producer**: Feeds emoji data to `emoji_topic`
